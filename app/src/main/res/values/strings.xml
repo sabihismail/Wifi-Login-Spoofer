@@ -1,6 +1,9 @@
 <resources>
     <string name="app_name">Wifi Settings</string>
-    <string name="descBack">Back</string>
-    <string name="descTitle">Wi-Fi</string>
-    <string name="descSwitch">Wi-Fi</string>
+    <string name="main_desc_back">Back</string>
+    <string name="main_desc_title">Wi-Fi</string>
+    <string name="main_desc_switch">Wi-Fi</string>
+    <string name="main_desc_additional_settings">Additional settings</string>
+    <string name="img_wifi_protected_access_point">Wifi Protected Access Point</string>
+    <string name="img_wifi_range">Wifi Range</string>
 </resources>

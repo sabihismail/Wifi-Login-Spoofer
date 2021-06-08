@@ -1,20 +1,33 @@
 package com.sabihismail.wifisettings
 
 import android.Manifest
+import android.R.attr.*
+import android.content.Context
 import android.content.pm.PackageManager
-import android.os.Build
-import androidx.appcompat.app.AppCompatActivity
-import android.os.Bundle
+import android.net.wifi.ScanResult
+import android.os.*
+import android.util.Log
+import android.view.LayoutInflater
 import android.view.View
-import android.widget.Button
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.Switch
+import android.widget.Space
+import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
+import com.sabihismail.wifisettings.util.ContextUtil.appName
+import com.sabihismail.wifisettings.util.ContextUtil.dpToPixel
+import kotlinx.coroutines.Dispatchers.Main
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import java.util.*
+import kotlin.collections.ArrayList
 import kotlin.system.exitProcess
 
 class MainActivity : AppCompatActivity() {
     private lateinit var accessPointSniffer: AccessPointSniffer
+    private val lst = ArrayList<String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -22,7 +35,11 @@ class MainActivity : AppCompatActivity() {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION), 87)
+                requestPermissions(arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION), 100)
+            }
+
+            if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 100)
             }
         }
 
@@ -32,16 +49,53 @@ class MainActivity : AppCompatActivity() {
 
         val swtWifiEnabled = findViewById<SwitchCompat>(R.id.swtWifiEnabled)
         swtWifiEnabled.setOnClickListener {
-            accessPointSniffer.set(swtWifiEnabled.isChecked)
+            accessPointSniffer.set(true)
 
             if (swtWifiEnabled.isChecked) {
                 lytNetworks.visibility = View.VISIBLE
 
-                while (accessPointSniffer.scanResults.isEmpty()) {
-                    Thread.sleep(300)
+                val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+
+                val job = GlobalScope.launch(Main) {
+                    while (swtWifiEnabled.isChecked) {
+                        val ssids = accessPointSniffer.scanResults.sortedBy { it.SSID }
+
+                        ssids.forEachIndexed { i, scanResult ->
+                            val ssid = scanResult.SSID
+                            if (lst.contains(ssid)) return@forEachIndexed
+
+                            val view = inflater.inflate(R.layout.access_point_info, lytNetworks, false)
+
+                            val txtSSID = view.findViewById<TextView>(R.id.txtSSID)
+                            txtSSID.text = ssid
+
+                            val imgLock = view.findViewById<ImageView>(R.id.imgLock)
+                            if (getScanResultSecurity(scanResult) == OPEN) {
+                                imgLock.visibility = View.INVISIBLE
+                            }
+
+                            lst.add(ssid)
+                            Log.i(applicationContext.appName(), "Adding SSID to Layout: $ssid")
+
+                            lytNetworks.addView(view)
+
+                            if (i == accessPointSniffer.scanResults.size - 1) return@forEachIndexed
+
+                            val dpPixels = applicationContext.dpToPixel(10)
+                            val params = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                            params.setMargins(0, 0, 0, dpPixels)
+
+                            val space = Space(applicationContext)
+                            space.layoutParams = params
+
+                            lytNetworks.addView(space)
+                        }
+
+                        delay(1000)
+                    }
                 }
 
-
+                job.start()
             } else {
                 lytNetworks.visibility = View.INVISIBLE
             }
@@ -52,5 +106,26 @@ class MainActivity : AppCompatActivity() {
             finish()
             exitProcess(0)
         }
+    }
+
+    private fun getScanResultSecurity(scanResult: ScanResult): String {
+        val cap: String = scanResult.capabilities
+        val securityModes = arrayOf(WEP, WPA, WPA2, WPA_EAP, IEEE8021X)
+        for (i in securityModes.indices.reversed()) {
+            if (cap.contains(securityModes[i])) {
+                return securityModes[i]
+            }
+        }
+
+        return OPEN
+    }
+
+    companion object {
+        const val WPA2 = "WPA2"
+        const val WPA = "WPA"
+        const val WEP = "WEP"
+        const val OPEN = "Open"
+        const val WPA_EAP = "WPA-EAP"
+        const val IEEE8021X = "IEEE8021X"
     }
 }

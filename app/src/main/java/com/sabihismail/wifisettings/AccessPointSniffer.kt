@@ -6,9 +6,15 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.net.wifi.ScanResult
 import android.net.wifi.WifiManager
+import android.util.Log
+import com.sabihismail.wifisettings.util.ContextUtil.appName
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class AccessPointSniffer(private val context: Context) {
     val scanResults = ArrayList<ScanResult>()
+    var isBound = false
 
     private val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
     private val wifiScanReceiver: BroadcastReceiver
@@ -16,21 +22,38 @@ class AccessPointSniffer(private val context: Context) {
     init {
         wifiScanReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
-                if (intent.action.equals(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)) {
-                    scanResults.addAll(wifiManager.scanResults)
+                Log.i(context.appName(), "Got Wifi Scan Results, count: ${wifiManager.scanResults.size}")
+
+                wifiManager.scanResults.forEach {
+                    if (it.SSID.isBlank() || scanResults.any { res -> res.SSID == it.SSID }) return@forEach
+
+                    scanResults.add(it)
                 }
             }
         }
-
-        wifiManager.startScan()
     }
 
     fun set(checked: Boolean) {
+        isBound = checked
+
         scanResults.clear()
 
         if (checked) {
+            Log.i(context.appName(), "Registered Wifi Receiver")
             context.registerReceiver(wifiScanReceiver, IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION))
+
+            val job = GlobalScope.launch {
+                while (isBound) {
+                    wifiManager.startScan()
+                    Log.i(context.appName(), "Starting Wifi Scan")
+
+                    delay(1000 * 10)
+                }
+            }
+
+            job.start()
         } else {
+            Log.i(context.appName(), "Unregistered Wifi Receiver")
             context.unregisterReceiver(wifiScanReceiver)
         }
     }
