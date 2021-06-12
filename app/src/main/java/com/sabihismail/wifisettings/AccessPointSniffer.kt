@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 
 class AccessPointSniffer(private val context: Context) {
     val scanResults = ArrayList<ScanResult>()
-    var isBound = false
+    private var isBound = false
 
     private val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
     private val wifiScanReceiver: BroadcastReceiver

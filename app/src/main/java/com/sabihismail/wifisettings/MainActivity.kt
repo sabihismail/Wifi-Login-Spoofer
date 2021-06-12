@@ -9,10 +9,7 @@ import android.os.*
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.Space
-import android.widget.TextView
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
 import com.sabihismail.wifisettings.util.ContextUtil.appName
@@ -78,8 +75,6 @@ class MainActivity : AppCompatActivity() {
                             Log.i(applicationContext.appName(), "Adding SSID to Layout: $ssid")
 
                             lytNetworks.addView(view)
-
-                            if (i == accessPointSniffer.scanResults.size - 1) return@forEachIndexed
 
                             val dpPixels = applicationContext.dpToPixel(10)
                             val params = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
