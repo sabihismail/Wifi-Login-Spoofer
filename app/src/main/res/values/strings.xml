@@ -6,4 +6,5 @@
     <string name="main_desc_additional_settings">Additional settings</string>
     <string name="img_wifi_protected_access_point">Wifi Protected Access Point</string>
     <string name="img_wifi_range">Wifi Range</string>
+    <string name="img_wifi_clickable">Wifi Clickable Access Point</string>
 </resources>

@@ -26,6 +26,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var accessPointSniffer: AccessPointSniffer
     private val lst = ArrayList<String>()
 
+    private var clickCount = 0
+    private var startTime = 0L
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -43,10 +46,9 @@ class MainActivity : AppCompatActivity() {
         accessPointSniffer = AccessPointSniffer(this)
 
         val lytNetworks = findViewById<LinearLayout>(R.id.lytNetworks)
-
         val swtWifiEnabled = findViewById<SwitchCompat>(R.id.swtWifiEnabled)
         swtWifiEnabled.setOnClickListener {
-            accessPointSniffer.set(true)
+            accessPointSniffer.set(swtWifiEnabled.isChecked)
 
             if (swtWifiEnabled.isChecked) {
                 lytNetworks.visibility = View.VISIBLE
@@ -57,33 +59,33 @@ class MainActivity : AppCompatActivity() {
                     while (swtWifiEnabled.isChecked) {
                         val ssids = accessPointSniffer.scanResults.sortedBy { it.SSID }
 
-                        ssids.forEachIndexed { i, scanResult ->
+                        if (ssids.isNotEmpty()) {
+                            lytNetworks.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                                .apply { setMargins(0, applicationContext.dpToPixel(10), 0, 0) }
+                        }
+
+                        ssids.forEach { scanResult ->
                             val ssid = scanResult.SSID
-                            if (lst.contains(ssid)) return@forEachIndexed
+                            if (lst.contains(ssid)) return@forEach
 
                             val view = inflater.inflate(R.layout.access_point_info, lytNetworks, false)
-
-                            val txtSSID = view.findViewById<TextView>(R.id.txtSSID)
-                            txtSSID.text = ssid
+                                .apply { findViewById<TextView>(R.id.txtSSID).text = ssid }
 
                             val imgLock = view.findViewById<ImageView>(R.id.imgLock)
                             if (getScanResultSecurity(scanResult) == OPEN) {
                                 imgLock.visibility = View.INVISIBLE
                             }
 
-                            lst.add(ssid)
-                            Log.i(applicationContext.appName(), "Adding SSID to Layout: $ssid")
+                            val space = Space(applicationContext).apply {
+                                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                                    .apply { setMargins(0, 0, 0, applicationContext.dpToPixel(10)) }
+                            }
 
                             lytNetworks.addView(view)
-
-                            val dpPixels = applicationContext.dpToPixel(10)
-                            val params = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-                            params.setMargins(0, 0, 0, dpPixels)
-
-                            val space = Space(applicationContext)
-                            space.layoutParams = params
-
                             lytNetworks.addView(space)
+
+                            lst.add(ssid)
+                            Log.i(applicationContext.appName(), "Adding SSID to Layout: $ssid")
                         }
 
                         delay(1000)
@@ -93,7 +95,27 @@ class MainActivity : AppCompatActivity() {
                 job.start()
             } else {
                 lytNetworks.visibility = View.INVISIBLE
+                lytNetworks.removeAllViews()
+
+                lst.clear()
+                Log.i(applicationContext.appName(), "Removed all SSIDs")
             }
+        }
+
+        val btnActionAdditionalSettings = findViewById<RelativeLayout>(R.id.btnActionAdditionalSettings)
+        btnActionAdditionalSettings.setOnClickListener {
+            val time = System.currentTimeMillis()
+
+            if (startTime == 0L || time - startTime > MAX_TIME) {
+                startTime = time
+                clickCount = 1
+            } else {
+                clickCount++
+            }
+
+            if (clickCount != MAX_CLICKS) return@setOnClickListener
+
+            Toast.makeText(applicationContext, "Developer mode initialized.", Toast.LENGTH_SHORT).show()
         }
 
         val btnBack = findViewById<ImageView>(R.id.btnBack)
@@ -122,5 +144,8 @@ class MainActivity : AppCompatActivity() {
         const val OPEN = "Open"
         const val WPA_EAP = "WPA-EAP"
         const val IEEE8021X = "IEEE8021X"
+
+        const val MAX_CLICKS = 10
+        const val MAX_TIME = 5 * 1000L
     }
 }

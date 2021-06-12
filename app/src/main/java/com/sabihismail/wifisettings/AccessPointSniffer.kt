@@ -44,6 +44,7 @@ class AccessPointSniffer(private val context: Context) {
 
             val job = GlobalScope.launch {
                 while (isBound) {
+                    @Suppress("DEPRECATION") // technically still works as expected, although deprecated
                     wifiManager.startScan()
                     Log.i(context.appName(), "Starting Wifi Scan")
 
@@ -54,7 +55,12 @@ class AccessPointSniffer(private val context: Context) {
             job.start()
         } else {
             Log.i(context.appName(), "Unregistered Wifi Receiver")
-            context.unregisterReceiver(wifiScanReceiver)
+
+            try {
+                context.unregisterReceiver(wifiScanReceiver) // no api to check if receiver already registered so try/catch
+            } catch (e: IllegalArgumentException) {
+
+            }
         }
     }
 }

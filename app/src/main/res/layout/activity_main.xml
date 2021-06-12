@@ -15,15 +15,17 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
+        android:paddingBottom="16dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/ic_baseline_arrow_back_24"
         android:contentDescription="@string/main_desc_back" />
 
-    <ScrollView
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:fillViewport="true"
+        android:paddingBottom="110dp"
         app:layout_constraintStart_toStartOf="@+id/btnBack"
         app:layout_constraintTop_toBottomOf="@+id/btnBack"
         app:layout_constraintLeft_toLeftOf="parent">
@@ -37,11 +39,8 @@
                 android:id="@+id/textView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
                 android:text="@string/main_desc_title"
-                android:textSize="42sp"
-                app:layout_constraintTop_toBottomOf="parent"
-                app:layout_constraintLeft_toLeftOf="parent" />
+                android:textSize="42sp" />
 
             <LinearLayout
                 android:id="@+id/linearLayout"
@@ -50,10 +49,7 @@
                 android:layout_marginStart="2dp"
                 android:layout_marginTop="24dp"
                 android:layout_marginEnd="2dp"
-                android:orientation="horizontal"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/textView">
+                android:orientation="horizontal">
 
                 <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/swtWifiEnabled"
@@ -69,51 +65,44 @@
                 android:id="@+id/lytNetworks"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
                 android:orientation="vertical"
-                android:visibility="invisible"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/linearLayout" />
+                android:visibility="invisible" />
 
             <View
                 android:id="@+id/divider"
-                style="@style/Divider.Horizontal"
-                android:visibility="visible"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/lytNetworks" />
+                android:layout_width="match_parent"
+                android:layout_height="2dp"
+                android:layout_marginTop="24dp"
+                android:background="?attr/colorSecondary" />
 
-            <androidx.constraintlayout.widget.ConstraintLayout
+            <RelativeLayout
                 android:id="@+id/btnActionAdditionalSettings"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:layout_constraintTop_toBottomOf="@+id/divider"
-                app:layout_constraintStart_toStartOf="parent"
-                android:layout_marginTop="24dp">
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="24dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_alignParentStart="true"
+                    android:layout_toStartOf="@id/imgLock"
                     android:text="@string/main_desc_additional_settings"
-                    android:textSize="24sp"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
+                    android:textSize="24sp"/>
 
                 <ImageView
                     android:id="@+id/imgLock"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintBottom_toBottomOf="parent"
+                    android:layout_centerVertical="true"
+                    android:layout_alignParentEnd="true"
                     app:srcCompat="@drawable/ic_baseline_arrow_forward_ios_24"
                     android:contentDescription="@string/main_desc_additional_settings" />
 
-            </androidx.constraintlayout.widget.ConstraintLayout>
+            </RelativeLayout>
 
         </LinearLayout>
 
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
