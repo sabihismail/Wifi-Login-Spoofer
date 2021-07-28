@@ -7,4 +7,7 @@
     <string name="img_wifi_protected_access_point">Wifi Protected Access Point</string>
     <string name="img_wifi_range">Wifi Range</string>
     <string name="img_wifi_clickable">Wifi Clickable Access Point</string>
+    <string name="password_prompt_advanced_options">Advanced Options</string>
+    <string name="password_prompt_connect">Connect</string>
+    <string name="password_prompt_hint_access_point_password">Access Point Password</string>
 </resources>

@@ -10,8 +10,10 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.*
+import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.sabihismail.wifisettings.util.ContextUtil.appName
 import com.sabihismail.wifisettings.util.ContextUtil.dpToPixel
 import kotlinx.coroutines.Dispatchers.Main
@@ -21,6 +23,7 @@ import kotlinx.coroutines.launch
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.system.exitProcess
+
 
 class MainActivity : AppCompatActivity() {
     private lateinit var accessPointSniffer: AccessPointSniffer
@@ -70,6 +73,11 @@ class MainActivity : AppCompatActivity() {
 
                             val view = inflater.inflate(R.layout.access_point_info, lytNetworks, false)
                                 .apply { findViewById<TextView>(R.id.txtSSID).text = ssid }
+                                .apply {
+                                    setOnClickListener {
+                                        onClickAccessPoint(ssid)
+                                    }
+                                }
 
                             val imgLock = view.findViewById<ImageView>(R.id.imgLock)
                             if (getScanResultSecurity(scanResult) == OPEN) {
@@ -123,6 +131,14 @@ class MainActivity : AppCompatActivity() {
             finish()
             exitProcess(0)
         }
+    }
+
+    private fun onClickAccessPoint(ssid: String) {
+        val bottomSheetDialog = BottomSheetDialog(this)
+            .apply { setContentView(R.layout.password_prompt_dialog) }
+            .apply { findViewById<TextView>(R.id.txtPasswordPromptSSID)?.text = ssid }
+
+        bottomSheetDialog.show()
     }
 
     private fun getScanResultSecurity(scanResult: ScanResult): String {
