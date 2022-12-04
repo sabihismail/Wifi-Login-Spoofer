@@ -1,16 +1,17 @@
 package com.sabihismail.wifisettings
 
+import android.Manifest
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.net.wifi.ScanResult
 import android.net.wifi.WifiManager
 import android.util.Log
+import androidx.core.app.ActivityCompat
 import com.sabihismail.wifisettings.util.ContextUtil.appName
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 
 class AccessPointSniffer(private val context: Context) {
     val scanResults = ArrayList<ScanResult>()
@@ -22,11 +23,14 @@ class AccessPointSniffer(private val context: Context) {
     init {
         wifiScanReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
+                if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) return
+
                 Log.i(context.appName(), "Got Wifi Scan Results, count: ${wifiManager.scanResults.size}")
 
                 wifiManager.scanResults.forEach {
-                    if (it.SSID.isBlank() || scanResults.any { res -> res.SSID == it.SSID }) return@forEach
+                    val ssid = it.SSID
 
+                    if (ssid.isBlank() || scanResults.any { res -> res.SSID == ssid }) return@forEach
                     scanResults.add(it)
                 }
             }
@@ -42,23 +46,23 @@ class AccessPointSniffer(private val context: Context) {
             Log.i(context.appName(), "Registered Wifi Receiver")
             context.registerReceiver(wifiScanReceiver, IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION))
 
-            val job = GlobalScope.launch {
-                while (isBound) {
-                    @Suppress("DEPRECATION") // technically still works as expected, although deprecated
-                    wifiManager.startScan()
-                    Log.i(context.appName(), "Starting Wifi Scan")
+            runBlocking {
+                CoroutineScope(Dispatchers.Default).launch {
+                    while (isBound) {
+                        @Suppress("DEPRECATION") // technically still works as expected, although deprecated
+                        wifiManager.startScan()
+                        Log.i(context.appName(), "Starting Wifi Scan")
 
-                    delay(1000 * 10)
+                        delay(1000 * 10)
+                    }
                 }
             }
-
-            job.start()
         } else {
             Log.i(context.appName(), "Unregistered Wifi Receiver")
 
             try {
                 context.unregisterReceiver(wifiScanReceiver) // no api to check if receiver already registered so try/catch
-            } catch (e: IllegalArgumentException) {
+            } catch (_: IllegalArgumentException) {
 
             }
         }
