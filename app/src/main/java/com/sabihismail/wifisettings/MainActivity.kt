@@ -1,27 +1,29 @@
 package com.sabihismail.wifisettings
 
 import android.Manifest
-import android.R.attr.*
 import android.content.Context
 import android.content.pm.PackageManager
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.net.wifi.ScanResult
-import android.os.*
+import android.net.wifi.WifiNetworkSpecifier
+import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
+import android.view.inputmethod.InputMethodManager
 import android.widget.*
-import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.sabihismail.wifisettings.util.ContextUtil.appName
 import com.sabihismail.wifisettings.util.ContextUtil.dpToPixel
-import kotlinx.coroutines.Dispatchers.Main
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.util.*
-import kotlin.collections.ArrayList
 import kotlin.system.exitProcess
 
 
@@ -36,14 +38,12 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION), 100)
-            }
+        if (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION), 100)
+        }
 
-            if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 100)
-            }
+        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 100)
         }
 
         accessPointSniffer = AccessPointSniffer(this)
@@ -58,7 +58,7 @@ class MainActivity : AppCompatActivity() {
 
                 val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
 
-                val job = GlobalScope.launch(Main) {
+                val job = CoroutineScope(Dispatchers.Main).launch {
                     while (swtWifiEnabled.isChecked) {
                         val ssids = accessPointSniffer.scanResults.sortedBy { it.SSID }
 
@@ -136,7 +136,55 @@ class MainActivity : AppCompatActivity() {
     private fun onClickAccessPoint(ssid: String) {
         val bottomSheetDialog = BottomSheetDialog(this)
             .apply { setContentView(R.layout.password_prompt_dialog) }
-            .apply { findViewById<TextView>(R.id.txtPasswordPromptSSID)?.text = ssid }
+            .apply { findViewById<TextView>(R.id.passwordPromptCancel)?.setOnClickListener { this.dismiss() } }
+            .apply {
+                val textInputView = findViewById<TextView>(R.id.txtPasswordPromptSSID)
+                textInputView?.text = ssid
+            }
+            .apply {
+
+                val editTextView = findViewById<TextView>(R.id.passwordPromptInput)
+                setOnShowListener {
+                    if (editTextView?.requestFocus() == true) {
+                        val inputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                        inputMethodManager.showSoftInput(editTextView, InputMethodManager.SHOW_IMPLICIT)
+                    }
+                }
+
+                findViewById<TextView>(R.id.passwordPromptConnect)?.setOnClickListener {
+                    val wifiNetworkSpecifier = WifiNetworkSpecifier.Builder()
+                        .setSsid(ssid)
+                        .setWpa2Passphrase(editTextView?.text.toString())
+                        .build()
+
+                    val networkRequest = NetworkRequest.Builder()
+                        .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                        .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                        .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED)
+                        .setNetworkSpecifier(wifiNetworkSpecifier)
+                        .build()
+
+                    val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+                    val networkCallback = object : ConnectivityManager.NetworkCallback() {
+                        override fun onAvailable(network: Network) {
+                            super.onAvailable(network)
+
+                            // To make sure that requests don't go over mobile data
+                            connectivityManager.bindProcessToNetwork(network)
+                        }
+
+                        override fun onLost(network: Network) {
+                            super.onLost(network)
+                            // This is to stop the looping request for OnePlus & Xiaomi models
+                            connectivityManager.bindProcessToNetwork(null)
+                            connectivityManager.unregisterNetworkCallback(this)
+                            // Here you can have a fallback option to show a 'Please connect manually' page with an Intent to the Wifi settings
+                        }
+                    }
+
+                    connectivityManager.requestNetwork(networkRequest, networkCallback)
+                }
+            }
 
         bottomSheetDialog.show()
     }
